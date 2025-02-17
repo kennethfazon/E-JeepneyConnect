@@ -6,7 +6,8 @@ import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/Ionicons';
 import api from '../../services/api';
-
+import Mapbox from '@rnmapbox/maps'; // Make sure Mapbox is imported
+import * as Location from 'expo-location';
 
 const COLORS = {
   primary: '#4e73df',
@@ -19,10 +20,28 @@ const COLORS = {
   softWhite: '#fdfdfe',
   danger: '#e74a3b',
 };
+
+Mapbox.setAccessToken('pk.eyJ1IjoicmljYXJkb2pyIiwiYSI6ImNtMjAwN2hubzBjdTUyanNmZDNobjlwdnMifQ.dByj0fl6cgi8yoYTbx9VfA');
 const Home = ({ navigation }) => {
   const [fullName, setFullName] = useState(''); // State to hold the full name
   const [showLogout, setShowLogout] = useState(false);
-  // Function to fetch the logged-in user's full name
+  const [jeepLocations, setJeepLocations] = useState([]);
+
+// Function to fetch jeep locations
+const fetchJeepLocations = async () => {
+  try {
+    const response = await api.get('/jeep-locations'); // Replace with your backend URL
+    setJeepLocations(response.data.locations);
+  } catch (error) {
+    console.error('Error fetching jeep locations:', error);
+  }
+};
+
+// Fetch jeep locations when the component mounts
+useEffect(() => {
+  fetchJeepLocations();
+}, []);
+
 
   const currentDate = new Date();
   const fetchUserName = async () => {
@@ -162,7 +181,7 @@ const Home = ({ navigation }) => {
             </View>
           </View>
 
-          {/* Plate No. and Driver Section */}
+          
           <View style={styles.plateDriverContainer}>
             <View style={styles.plateDriverContent}>
               <Text style={styles.welcomeText}>Welcome,</Text>
@@ -171,7 +190,7 @@ const Home = ({ navigation }) => {
            
           </View>
 
-               {/* Stats Cards */}
+              
                <View style={styles.statsContainer}>
             {statsData.map((stat, index) => (
               <View
@@ -189,6 +208,42 @@ const Home = ({ navigation }) => {
                 <Text style={styles.statTrend}>{stat.trend}</Text>
               </View>
             ))}
+          </View>
+          
+          <View style={styles.mapContainer}>
+          <Mapbox.MapView styleURL="mapbox://styles/mapbox/streets-v11" style={styles.mapView}>
+  <Mapbox.Camera
+    zoomLevel={12}
+    // Set a default center if needed, or calculate a center based on jeep locations
+    centerCoordinate={
+      jeepLocations.length > 0
+        ? [parseFloat(jeepLocations[0].longitude), parseFloat(jeepLocations[0].latitude)]
+        : [0, 0]  // Default center if no jeeps
+    }
+  />
+  
+  {/* Jeep Location Markers */}
+  {jeepLocations.map((jeep, index) => {
+    const longitude = parseFloat(jeep.longitude);  // Ensure it's a number
+    const latitude = parseFloat(jeep.latitude);    // Ensure it's a number
+
+    // Skip rendering this marker if either latitude or longitude is invalid
+    if (isNaN(longitude) || isNaN(latitude) || longitude == null || latitude == null) {
+      return null;  // Don't render this marker if coordinates are invalid
+    }
+
+    return (
+      <Mapbox.PointAnnotation
+        key={`jeep-${jeep.id}`}
+        id={`jeep-marker-${jeep.id}`}
+        coordinate={[longitude, latitude]}  // Use the valid numbers here
+      >
+        <Ionicons name="car" size={20} color={'blue'} />
+      </Mapbox.PointAnnotation>
+    );
+  })}
+</Mapbox.MapView>
+
           </View>
          
         </ScrollView>

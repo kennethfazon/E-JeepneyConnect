@@ -37,69 +37,46 @@ const Replacement = () => {
         fetchAvailableJeeps();
     }, []);
 
-    const handleTransfer = async (problemJeepId) => {
-        // Check if the selected jeep is available for transfer
-        if (!selectedJeeps[problemJeepId]) {
-            Toast.show({
-                type: 'error',
-                text1: '🚨 Selection Required',
-                text2: `Please select a replacement jeepney for ${problemJeeps.find(j => j.jeep_id === problemJeepId).plate_number}`,
-                visibilityTime: 3000,
-                position: 'top',
-                topOffset: 50,
-                textStyle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-                backgroundColor: '#d9534f',
-                icon: '❌'
-            });
-            return;
-        }
-
-        const replacementJeepId = selectedJeeps[problemJeepId];
-
-        try {
-            // Make API call to transfer passengers and update the database
-            const response = await api.post('/api/transfer-passengers', {
-                problemJeepId,
-                replacementJeepId
-            });
-
-            // Display success toast on successful transfer
-            Toast.show({
-                type: 'success',
-                text1: '✅ Transfer Successful',
-                text2: `Passengers transferred from Jeep ${problemJeeps.find(j => j.jeep_id === problemJeepId).plate_number} to Jeep ${jeeps.find(j => j.jeep_id === replacementJeepId).plate_number}`,
-                visibilityTime: 3000,
-                position: 'top',
-                topOffset: 50,
-                textStyle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-                backgroundColor: '#28a745',
-                icon: '✔️'
-            });
-
-            // Optionally, you can refetch the problem jeeps after a successful transfer to update the UI
-            fetchProblemJeeps();
-
-        } catch (error) {
-            console.error('Error transferring passengers:', error);
-            Toast.show({
-                type: 'error',
-                text1: '🚨 Error',
-                text2: 'An error occurred while transferring passengers. Please try again later.',
-                visibilityTime: 3000,
-                position: 'top',
-                topOffset: 50,
-                textStyle: { fontSize: 16, fontWeight: 'bold', color: '#fff' },
-                backgroundColor: '#d9534f',
-                icon: '❌'
-            });
-        }
-    };
+ 
 
     const handlePickerChange = (jeepId, selectedJeepId) => {
         setSelectedJeeps(prevSelectedJeeps => ({
             ...prevSelectedJeeps,
             [jeepId]: selectedJeepId
         }));
+    };
+
+    const handleTransfer = async (problemJeepId) => {
+        const replacementJeepId = selectedJeeps[problemJeepId];
+
+        if (!replacementJeepId) {
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'Please select a replacement jeepney.',
+            });
+            return;
+        }
+
+        try {
+            const response = await api.post('/transfer-passengers', {
+                problematicJeepId: problemJeepId,
+                replacementJeepId: replacementJeepId
+            });
+
+            Toast.show({
+                type: 'success',
+                text1: 'Success',
+                text2: 'Passengers transferred successfully.',
+            });
+        } catch (error) {
+            console.error('Error during passenger transfer:', error);
+            Toast.show({
+                type: 'error',
+                text1: 'Error',
+                text2: 'An error occurred while transferring passengers.',
+            });
+        }
     };
 
     return (
